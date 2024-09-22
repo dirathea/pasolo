@@ -1,14 +1,19 @@
 package main
 
 import (
+	"bytes"
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/dirathea/passkey-backend/pkg/user"
 	"github.com/go-webauthn/webauthn/webauthn"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"golang.org/x/crypto/bcrypt"
 )
 
 var (
@@ -62,7 +67,75 @@ func deleteSessionData() error {
 	return os.Remove(SessionDataFile)
 }
 
+func initRegisterPassword() {
+	// generate password and hash it
+	// store it in a file
+	password := generateRandomPassword(12)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		fmt.Println("Error hashing password:", err)
+		return
+	}
+
+	file, err := os.Create("password.txt")
+	if err != nil {
+		fmt.Println("Error creating file:", err)
+		return
+	}
+	defer file.Close()
+
+	if _, err := file.Write(hashedPassword); err != nil {
+		fmt.Println("Error writing to file:", err)
+		return
+	}
+
+	if err := file.Sync(); err != nil {
+		fmt.Println("Error syncing file:", err)
+		return
+	}
+	fmt.Println("Store this password securely, and use it to register your passkey. This password will not be displayed again.")
+	fmt.Println(password)
+}
+
+func generateRandomPassword(i int) string {
+	b := make([]byte, i)
+	_, err := rand.Read(b)
+	if err != nil {
+		fmt.Println("Error generating random password:", err)
+		return ""
+	}
+
+	return base64.StdEncoding.EncodeToString(b)
+}
+
+func checkPassword(password string) bool {
+	file, err := os.Open("password.txt")
+	if err != nil {
+		fmt.Println("Error opening file:", err)
+		return false
+	}
+	defer file.Close()
+
+	hashedPassword := make([]byte, 60)
+	if _, err := file.Read(hashedPassword); err != nil {
+		fmt.Println("Error reading file:", err)
+		return false
+	}
+
+	if err := bcrypt.CompareHashAndPassword(hashedPassword, []byte(password)); err != nil {
+		fmt.Println("Error comparing password:", err)
+		return false
+	}
+
+	return true
+}
+
 func main() {
+
+	if _, err := os.Stat("password.txt"); os.IsNotExist(err) {
+		initRegisterPassword()
+	}
+
 	e := echo.New()
 
 	wconfig := &webauthn.Config{
@@ -109,7 +182,37 @@ func main() {
 		}
 		e.Logger.Print("Session data loaded", sessionData)
 
-		credential, err := webAuthn.FinishRegistration(staticUser, *sessionData, c.Request())
+		// clone request body to different request variable
+		authRequest := c.Request().Clone(c.Request().Context())
+		var body map[string]interface{}
+		if err := json.NewDecoder(c.Request().Body).Decode(&body); err != nil {
+			e.Logger.Print("Failed to decode request body", err)
+			return c.JSON(400, err)
+		}
+
+		// check if password is provided
+		pass, ok := body["password"]
+		if !ok {
+			return c.JSON(400, "missing password attribute")
+		}
+
+		// check if password is correct
+		if checkPassword(pass.(string)) == false {
+			return c.JSON(400, "incorrect password")
+		}
+
+		authCred, ok := body["credential"]
+		if !ok {
+			return c.JSON(400, "missing credential attribute")
+		}
+		credentialBytes, err := json.Marshal(authCred)
+		if err != nil {
+			e.Logger.Print("Failed to marshal credential", err)
+			return c.JSON(400, err)
+		}
+		authRequest.Body = io.NopCloser(bytes.NewReader(credentialBytes))
+
+		credential, err := webAuthn.FinishRegistration(staticUser, *sessionData, authRequest)
 		if err != nil {
 			e.Logger.Print("Registration Failed", err)
 			return c.JSON(500, err)
