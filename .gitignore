@@ -28,3 +28,5 @@ user.json
 sessionData.json
 
 password.txt
+
+.env

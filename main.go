@@ -9,6 +9,10 @@ import (
 	"io"
 	"os"
 
+	_ "github.com/joho/godotenv/autoload"
+
+	"github.com/dirathea/passkey-backend/pkg/config"
+	"github.com/dirathea/passkey-backend/pkg/cookie"
 	"github.com/dirathea/passkey-backend/pkg/user"
 	"github.com/go-webauthn/webauthn/webauthn"
 	"github.com/labstack/echo/v4"
@@ -136,12 +140,21 @@ func main() {
 		initRegisterPassword()
 	}
 
+	config := config.LoadConfig()
+
 	e := echo.New()
 
+	origin := fmt.Sprintf("%s://%s", config.Server.Protocol, config.Server.Domain)
+	if config.Server.Port != "" {
+		origin = fmt.Sprintf("%s:%s", origin, config.Server.Port)
+	}
+
 	wconfig := &webauthn.Config{
-		RPDisplayName: "Go Webauthn",                     // Display Name for your site
-		RPID:          "localhost",                       // Generally the FQDN for your site
-		RPOrigins:     []string{"http://localhost:8080"}, // The origin URLs allowed for WebAuthn requests
+		RPDisplayName: config.Passkey.DisplayName, // Display Name for your site
+		RPID:          config.Server.Domain,       // Generally the FQDN for your site
+		RPOrigins: []string{
+			origin,
+		}, // The origin URLs allowed for WebAuthn requests
 	}
 	if webAuthn, err = webauthn.New(wconfig); err != nil {
 		fmt.Println(err)
@@ -151,7 +164,8 @@ func main() {
 
 	// Static user
 	keyBytes := [32]byte{}
-	copy(keyBytes[:], Key)
+	copy(keyBytes[:], config.EncyptionKey)
+	e.Logger.Debugf("Key: %v", config.EncyptionKey)
 	if staticUser, err = user.LoadUser(PersistFile, keyBytes); err != nil {
 		fmt.Println("User does not exist, creating a new one")
 		newUser := user.GetUser()
@@ -261,6 +275,8 @@ func main() {
 		if err := deleteSessionData(); err != nil {
 			print(err)
 		}
+
+		cookie.SetCookie(c, staticUser)
 
 		return c.JSON(200, credentials)
 	})

@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/dirathea/passkey-backend/pkg/config"
 	"github.com/go-webauthn/webauthn/webauthn"
 	"golang.org/x/crypto/nacl/secretbox"
 )
@@ -103,10 +104,13 @@ func (u *User) WebAuthnName() string {
 }
 
 func GetUser() webauthn.User {
+
+	config := config.LoadConfig()
+
 	return &User{
-		ID:          "me@dirathea.com",
-		DisplayName: "Aldira Putra Raharja",
-		Name:        "dirathea",
+		ID:          config.User.ID,
+		DisplayName: config.User.DisplayName,
+		Name:        config.User.Name,
 		Credentials: []webauthn.Credential{},
 	}
 }
