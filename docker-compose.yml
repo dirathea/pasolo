@@ -1,0 +1,14 @@
+services:
+  pasolo:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: pasolo:latest
+    env_file:
+      - .env
+    environment:
+      STORE_DATADIR: /secret
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./secret:/secret

@@ -2,22 +2,20 @@ package main
 
 import (
 	"bytes"
-	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
-	"os"
 
 	_ "github.com/joho/godotenv/autoload"
 
-	"github.com/dirathea/passkey-backend/pkg/config"
-	"github.com/dirathea/passkey-backend/pkg/cookie"
-	"github.com/dirathea/passkey-backend/pkg/user"
+	"github.com/dirathea/pasolo/pkg/config"
+	"github.com/dirathea/pasolo/pkg/cookie"
+	"github.com/dirathea/pasolo/pkg/register"
+	"github.com/dirathea/pasolo/pkg/session"
+	"github.com/dirathea/pasolo/pkg/user"
 	"github.com/go-webauthn/webauthn/webauthn"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"golang.org/x/crypto/bcrypt"
 )
 
 var (
@@ -27,133 +25,23 @@ var (
 
 const (
 	// SessionDataFile is the file where the session data is stored
-	SessionDataFile = "sessionData.json"
-	PersistFile     = "user.json"
-	Key             = "12345678901234567890123456789012"
+	PersistFile = "user.json"
+	Key         = "12345678901234567890123456789012"
 )
-
-func storeSessionData(sessionData *webauthn.SessionData) error {
-	file, err := os.Create(SessionDataFile)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	encoder := json.NewEncoder(file)
-	if err := encoder.Encode(sessionData); err != nil {
-		return err
-	}
-
-	if err := file.Sync(); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func loadSessionData() (*webauthn.SessionData, error) {
-	file, err := os.Open(SessionDataFile)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
-	var sessionData *webauthn.SessionData
-	decoder := json.NewDecoder(file)
-	if err := decoder.Decode(&sessionData); err != nil {
-		return nil, err
-	}
-
-	return sessionData, nil
-}
-
-func deleteSessionData() error {
-	return os.Remove(SessionDataFile)
-}
-
-func initRegisterPassword() {
-	// generate password and hash it
-	// store it in a file
-	password := generateRandomPassword(12)
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		fmt.Println("Error hashing password:", err)
-		return
-	}
-
-	file, err := os.Create("password.txt")
-	if err != nil {
-		fmt.Println("Error creating file:", err)
-		return
-	}
-	defer file.Close()
-
-	if _, err := file.Write(hashedPassword); err != nil {
-		fmt.Println("Error writing to file:", err)
-		return
-	}
-
-	if err := file.Sync(); err != nil {
-		fmt.Println("Error syncing file:", err)
-		return
-	}
-	fmt.Println("Store this password securely, and use it to register your passkey. This password will not be displayed again.")
-	fmt.Println(password)
-}
-
-func generateRandomPassword(i int) string {
-	b := make([]byte, i)
-	_, err := rand.Read(b)
-	if err != nil {
-		fmt.Println("Error generating random password:", err)
-		return ""
-	}
-
-	return base64.StdEncoding.EncodeToString(b)
-}
-
-func checkPassword(password string) bool {
-	file, err := os.Open("password.txt")
-	if err != nil {
-		fmt.Println("Error opening file:", err)
-		return false
-	}
-	defer file.Close()
-
-	hashedPassword := make([]byte, 60)
-	if _, err := file.Read(hashedPassword); err != nil {
-		fmt.Println("Error reading file:", err)
-		return false
-	}
-
-	if err := bcrypt.CompareHashAndPassword(hashedPassword, []byte(password)); err != nil {
-		fmt.Println("Error comparing password:", err)
-		return false
-	}
-
-	return true
-}
 
 func main() {
 
-	if _, err := os.Stat("password.txt"); os.IsNotExist(err) {
-		initRegisterPassword()
-	}
+	register.Init()
 
 	config := config.LoadConfig()
 
 	e := echo.New()
 
-	origin := fmt.Sprintf("%s://%s", config.Server.Protocol, config.Server.Domain)
-	if config.Server.Port != "" {
-		origin = fmt.Sprintf("%s:%s", origin, config.Server.Port)
-	}
-
 	wconfig := &webauthn.Config{
 		RPDisplayName: config.Passkey.DisplayName, // Display Name for your site
 		RPID:          config.Server.Domain,       // Generally the FQDN for your site
 		RPOrigins: []string{
-			origin,
+			config.Passkey.Origin,
 		}, // The origin URLs allowed for WebAuthn requests
 	}
 	if webAuthn, err = webauthn.New(wconfig); err != nil {
@@ -179,7 +67,7 @@ func main() {
 			return c.JSON(500, err)
 		}
 
-		if err := storeSessionData(sessionData); err != nil {
+		if err := session.Store(sessionData); err != nil {
 			return c.JSON(500, err)
 		}
 
@@ -190,11 +78,10 @@ func main() {
 		e.Logger.Print("POST /auth/register")
 		e.Logger.Print(c.Request().Body)
 		e.Logger.Print("Loading session data")
-		sessionData, err := loadSessionData()
+		sessionData, err := session.Load()
 		if err != nil {
 			return c.JSON(500, err)
 		}
-		e.Logger.Print("Session data loaded", sessionData)
 
 		// clone request body to different request variable
 		authRequest := c.Request().Clone(c.Request().Context())
@@ -211,7 +98,7 @@ func main() {
 		}
 
 		// check if password is correct
-		if checkPassword(pass.(string)) == false {
+		if register.Verify(pass.(string)) == false {
 			return c.JSON(400, "incorrect password")
 		}
 
@@ -232,7 +119,7 @@ func main() {
 			return c.JSON(500, err)
 		}
 
-		if err := deleteSessionData(); err != nil {
+		if err := session.Delete(); err != nil {
 			print(err)
 		}
 
@@ -250,7 +137,7 @@ func main() {
 			return c.JSON(500, err)
 		}
 
-		if err := storeSessionData(sessionData); err != nil {
+		if err := session.Store(sessionData); err != nil {
 			return c.JSON(500, err)
 		}
 
@@ -261,7 +148,7 @@ func main() {
 		e.Logger.Print("POST /auth/login")
 		e.Logger.Print(c.Request().Body)
 		e.Logger.Print("Loading session data")
-		sessionData, err := loadSessionData()
+		sessionData, err := session.Load()
 		if err != nil {
 			return c.JSON(500, err)
 		}
@@ -272,7 +159,7 @@ func main() {
 			e.Logger.Print("Login Failed", err)
 			return c.JSON(500, err)
 		}
-		if err := deleteSessionData(); err != nil {
+		if err := session.Delete(); err != nil {
 			print(err)
 		}
 
@@ -281,10 +168,20 @@ func main() {
 		return c.JSON(200, credentials)
 	})
 
+	e.GET("/validate", func(c echo.Context) error {
+		err := cookie.ValidateCookie(c, staticUser)
+		if err != nil {
+			return c.JSON(401, err)
+		}
+		return c.JSON(200, "OK")
+	})
+
 	e.Use(middleware.StaticWithConfig(middleware.StaticConfig{
 		Root:  "frontend/build/client",
 		HTML5: true,
 	}))
 
-	e.Logger.Fatal(e.Start(":8080"))
+	address := fmt.Sprintf(":%s", config.Server.Port)
+
+	e.Logger.Fatal(e.Start(address))
 }

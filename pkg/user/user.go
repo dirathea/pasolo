@@ -7,7 +7,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/dirathea/passkey-backend/pkg/config"
+	"github.com/dirathea/pasolo/pkg/config"
 	"github.com/go-webauthn/webauthn/webauthn"
 	"golang.org/x/crypto/nacl/secretbox"
 )

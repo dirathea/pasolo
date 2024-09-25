@@ -3,7 +3,6 @@ package config
 import (
 	"context"
 	"log"
-	"os"
 	"sync"
 
 	"github.com/sethvargo/go-envconfig"
@@ -14,6 +13,7 @@ type Config struct {
 	Passkey      *PasskeyConfig `env:", prefix=PASSKEY_"`
 	Server       *ServerConfig  `env:", prefix=SERVER_"`
 	User         *UserConfig    `env:", prefix=USER_"`
+	Store        *StoreConfig   `env:", prefix=STORE_"`
 	EncyptionKey string         `env:"ENCRYPTION_KEY, required"`
 }
 
@@ -24,7 +24,8 @@ type ServerConfig struct {
 }
 
 type PasskeyConfig struct {
-	DisplayName string `env:"DISPLAY_NAME, default=Passkey"`
+	DisplayName string `env:"DISPLAY_NAME, default=Pasolo"`
+	Origin      string `env:"ORIGIN, default=http://localhost:8080"`
 }
 
 type UserConfig struct {
@@ -34,8 +35,12 @@ type UserConfig struct {
 }
 
 type CookieConfig struct {
-	Name   string `env:"NAME, default=passkey-backend"`
+	Name   string `env:"NAME, default=pasolo"`
 	Secret string `env:"SECRET, required"`
+}
+
+type StoreConfig struct {
+	DataDir string `env:"DATADIR, default=./"`
 }
 
 var (
@@ -46,7 +51,6 @@ var (
 func LoadConfig() Config {
 	once.Do(func() {
 		ctx := context.Background()
-		log.Print(os.Getenv("USER_ID"))
 		if err := envconfig.Process(ctx, &config); err != nil {
 			log.Fatal("Failed to process envconfig ", err)
 		}

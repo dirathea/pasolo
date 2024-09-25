@@ -27,6 +27,9 @@ export default function Login() {
             // Wait for the results of verification
             const verificationJSON = await verificationResp.json();
             console.log(verificationJSON);
+
+            // Redirect to the home page
+            window.location.href = "/validate";
           } catch (error) {
             console.error(error);
           }

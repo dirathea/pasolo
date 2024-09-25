@@ -1,4 +1,4 @@
-module github.com/dirathea/passkey-backend
+module github.com/dirathea/pasolo
 
 go 1.23
 
