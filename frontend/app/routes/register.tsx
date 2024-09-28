@@ -26,9 +26,7 @@ export default function Register() {
         }),
       });
 
-      // Wait for the results of verification
-      const verificationJSON = await verificationResp.json();
-      console.log(verificationJSON);
+      window.location.href = '/login';
     } catch (error) {
       console.error(error);
     }

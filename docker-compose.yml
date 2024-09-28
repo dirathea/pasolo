@@ -11,4 +11,7 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ./secret:/secret
+      - secret:/secret
+
+volumes:
+  secret:

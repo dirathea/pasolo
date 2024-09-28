@@ -1,0 +1,10 @@
+# Serve your app
+proxy.caddy.orb.local {
+	forward_auth auth:8080 {
+		uri /validate
+		copy_headers Remote-User Remote-Groups Remote-Name Remote-Email
+
+	}
+
+	reverse_proxy target:3000
+}

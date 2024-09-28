@@ -28,10 +28,12 @@ export default function Login() {
             const verificationJSON = await verificationResp.json();
             console.log(verificationJSON);
 
-            // Redirect to the home page
-            window.location.href = "/validate";
+            const urlParams = new URLSearchParams(window.location.search);
+            const redirectUrl = urlParams.get('redirect') || '/';
+            window.location.href = redirectUrl;
+
           } catch (error) {
-            console.error(error);
+            window.location.href = '/register';
           }
         }
         login();

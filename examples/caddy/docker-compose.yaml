@@ -1,0 +1,29 @@
+services:
+  auth:
+    build:
+      context: ../../.
+      dockerfile: Dockerfile
+    image: pasolo:latest
+    env_file:
+      - .env
+    environment:
+      STORE_DATADIR: /secret
+    ports:
+      - 8080
+    volumes:
+      - secret:/secret
+
+  proxy:
+    image: caddy:2
+    ports:
+      - 80
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+
+  target:
+    image: zefhemel/silverbullet
+    expose:
+      - 3000
+
+volumes:
+  secret:
