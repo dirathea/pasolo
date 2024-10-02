@@ -12,18 +12,24 @@ import (
 	"golang.org/x/crypto/nacl/secretbox"
 )
 
+const (
+	PersistFile = "user.json"
+)
+
 type User struct {
-	ID          string
-	DisplayName string
-	Credentials []webauthn.Credential
-	Name        string
+	ID            string
+	DisplayName   string
+	Credentials   []webauthn.Credential
+	Name          string
+	FilePath      string
+	EncryptionKey [32]byte
 }
 
 func (u *User) AddCredential(credential webauthn.Credential) {
 	u.Credentials = append(u.Credentials, credential)
 }
 
-func (u *User) Persist(filePath string, key [32]byte) error {
+func (u *User) Persist() error {
 	// Marshal the User struct to JSON
 	data, err := json.Marshal(u)
 	if err != nil {
@@ -37,10 +43,10 @@ func (u *User) Persist(filePath string, key [32]byte) error {
 	}
 
 	// Encrypt the data
-	encrypted := secretbox.Seal(nonce[:], data, &nonce, &key)
+	encrypted := secretbox.Seal(nonce[:], data, &nonce, &u.EncryptionKey)
 
 	// Write the encrypted data to the file
-	file, err := os.Create(filePath)
+	file, err := os.Create(u.FilePath)
 	if err != nil {
 		return err
 	}
@@ -53,7 +59,14 @@ func (u *User) Persist(filePath string, key [32]byte) error {
 	return nil
 }
 
-func LoadUser(filePath string, key [32]byte) (*User, error) {
+func LoadUser() (*User, error) {
+	config := config.LoadConfig()
+
+	keyBytes := [32]byte{}
+	copy(keyBytes[:], config.EncyptionKey)
+
+	filePath := config.Store.DataDir + PersistFile
+
 	// Read the encrypted data from the file
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -69,7 +82,7 @@ func LoadUser(filePath string, key [32]byte) (*User, error) {
 	// Decrypt the data
 	var nonce [24]byte
 	copy(nonce[:], encrypted[:24])
-	decrypted, ok := secretbox.Open(nil, encrypted[24:], &nonce, &key)
+	decrypted, ok := secretbox.Open(nil, encrypted[24:], &nonce, &keyBytes)
 	if !ok {
 		return nil, fmt.Errorf("failed to decrypt data")
 	}
@@ -79,6 +92,8 @@ func LoadUser(filePath string, key [32]byte) (*User, error) {
 	if err := json.Unmarshal(decrypted, &user); err != nil {
 		return nil, err
 	}
+	user.FilePath = filePath
+	user.EncryptionKey = keyBytes
 
 	return &user, nil
 }

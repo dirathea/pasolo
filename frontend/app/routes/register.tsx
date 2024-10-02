@@ -4,6 +4,10 @@ import { startRegistration } from "@simplewebauthn/browser";
 export default function Register() {
 
   async function register(password: string) {
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const redirectUrl = urlParams.get('rd') || '/';
+
     const register = await fetch("/auth/register", {
       method: "GET",
     });
@@ -26,7 +30,7 @@ export default function Register() {
         }),
       });
 
-      window.location.href = '/login';
+      window.location.href = '/login?rd=' + redirectUrl;
     } catch (error) {
       console.error(error);
     }

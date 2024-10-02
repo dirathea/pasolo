@@ -5,6 +5,10 @@ export default function Login() {
 
     useEffect(() => {
         async function login() {
+
+          const urlParams = new URLSearchParams(window.location.search);
+          const redirectUrl = urlParams.get('rd') || '/';
+
           const register = await fetch("/auth/login", {
             method: "GET",
           });
@@ -28,12 +32,10 @@ export default function Login() {
             const verificationJSON = await verificationResp.json();
             console.log(verificationJSON);
 
-            const urlParams = new URLSearchParams(window.location.search);
-            const redirectUrl = urlParams.get('redirect') || '/';
             window.location.href = redirectUrl;
 
           } catch (error) {
-            window.location.href = '/register';
+            window.location.href = '/register?rd=' + redirectUrl;
           }
         }
         login();
