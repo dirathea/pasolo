@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"os"
 
 	"github.com/dirathea/pasolo/pkg/config"
@@ -70,6 +71,7 @@ func LoadUser() (*User, error) {
 	// Read the encrypted data from the file
 	file, err := os.Open(filePath)
 	if err != nil {
+		log.Println("Error opening file:", err)
 		return nil, err
 	}
 	defer file.Close()
@@ -122,10 +124,16 @@ func GetUser() webauthn.User {
 
 	config := config.LoadConfig()
 
+	filePath := config.Store.DataDir + PersistFile
+	keyBytes := [32]byte{}
+	copy(keyBytes[:], config.EncyptionKey)
+
 	return &User{
-		ID:          config.User.ID,
-		DisplayName: config.User.DisplayName,
-		Name:        config.User.Name,
-		Credentials: []webauthn.Credential{},
+		ID:            config.User.ID,
+		DisplayName:   config.User.DisplayName,
+		Name:          config.User.Name,
+		Credentials:   []webauthn.Credential{},
+		FilePath:      filePath,
+		EncryptionKey: keyBytes,
 	}
 }

@@ -3,13 +3,38 @@ package register
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"path"
 
 	"github.com/dirathea/pasolo/pkg/config"
+	"github.com/dirathea/pasolo/pkg/session"
 	"golang.org/x/crypto/bcrypt"
 )
+
+type RegisterRequest struct {
+	Password   string `json:"password"`
+	Credential map[string]interface{}
+}
+
+func (r *RegisterRequest) GetSessionChallenge() (string, error) {
+	// cast Credential to RegisterCredential
+	rawCreds, err := json.Marshal(r.Credential)
+	if err != nil {
+		log.Println("Error marshalling credential:", err)
+		return "", err
+	}
+
+	var credential session.ResponseSession
+	if err := json.Unmarshal(rawCreds, &credential); err != nil {
+		log.Println("Error unmarshalling credential:", err)
+		return "", err
+	}
+
+	return credential.GetSessionChallenge()
+}
 
 func passwordPath() string {
 	config := config.LoadConfig()

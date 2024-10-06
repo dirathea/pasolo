@@ -30,7 +30,12 @@ export default function Register() {
         }),
       });
 
-      window.location.href = '/login?rd=' + redirectUrl;
+      if (!verificationResp.ok) {
+        throw new Error("Failed to verify registration");
+      } else {
+        window.location.href = '/login?rd=' + redirectUrl;
+      }
+      
     } catch (error) {
       console.error(error);
     }

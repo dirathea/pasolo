@@ -7,6 +7,7 @@ import (
 	"io"
 
 	_ "github.com/joho/godotenv/autoload"
+	"github.com/labstack/gommon/log"
 
 	"github.com/dirathea/pasolo/pkg/config"
 	"github.com/dirathea/pasolo/pkg/cookie"
@@ -45,12 +46,13 @@ func main() {
 	var staticUser *user.User
 
 	// Static user
-	e.Logger.Debugf("Key: %v", config.EncyptionKey)
 	if staticUser, err = user.LoadUser(); err != nil {
 		fmt.Println("User does not exist, creating a new one")
 		newUser := user.GetUser()
 		staticUser = newUser.(*user.User)
-		staticUser.Persist()
+		if err := staticUser.Persist(); err != nil {
+			log.Fatal("Failed to persist user. Exiting.", err)
+		}
 	}
 
 	e.GET("/auth/register", func(c echo.Context) error {
@@ -73,49 +75,49 @@ func main() {
 
 	e.POST("/auth/register", func(c echo.Context) error {
 		e.Logger.Debug("POST /auth/register")
-		e.Logger.Debug("Loading session data")
-		sessionData, err := session.Load()
+
+		e.Logger.Debug("Parsing request body")
+		// clone request body to different request variable
+
+		bodybytes, err := io.ReadAll(c.Request().Body)
+		if err != nil {
+			e.Logger.Debug("Failed to read request body", err)
+			return c.JSON(400, err)
+		}
+
+		var body register.RegisterRequest
+		if err := json.Unmarshal(bodybytes, &body); err != nil {
+			e.Logger.Debug("Failed to decode request body", err)
+			return c.JSON(400, err)
+		}
+
+		e.Logger.Debug("Verifying password")
+		// check if password is correct
+		if register.Verify(body.Password) == false {
+			e.Logger.Error("incorrect password")
+			return c.JSON(400, "incorrect password")
+		}
+
+		e.Logger.Debug("Load Session")
+		challenge, err := body.GetSessionChallenge()
+		if err != nil {
+			e.Logger.Error("Failed to get session challenge", err)
+			return c.JSON(500, err)
+		}
+		sessionData, err := session.Load(challenge)
 		if err != nil {
 			e.Logger.Error("Failed to load session data", err)
 			return c.JSON(500, err)
 		}
 
-		e.Logger.Debug("Parsing request body")
-		// clone request body to different request variable
-		authRequest := c.Request().Clone(c.Request().Context())
-		var body map[string]interface{}
-		if err := json.NewDecoder(c.Request().Body).Decode(&body); err != nil {
-			e.Logger.Debug("Failed to decode request body", err)
-			return c.JSON(400, err)
-		}
-
-		// check if password is provided
-		pass, ok := body["password"]
-		if !ok {
-			e.Logger.Error("missing password attribute")
-			return c.JSON(400, "missing password attribute")
-		}
-
-		// check if password is correct
-		if register.Verify(pass.(string)) == false {
-			e.Logger.Error("incorrect password")
-			return c.JSON(400, "incorrect password")
-		}
-
-		authCred, ok := body["credential"]
-		if !ok {
-			e.Logger.Error("missing credential attribute")
-			return c.JSON(400, "missing credential attribute")
-		}
-
-		e.Logger.Debug("Parsing credential")
-		credentialBytes, err := json.Marshal(authCred)
-		if err != nil {
-			e.Logger.Error("Failed to marshal credential", err)
-			return c.JSON(400, err)
-		}
-
 		e.Logger.Debug("Finishing registration")
+		credentialBytes, err := json.Marshal(body.Credential)
+		if err != nil {
+			e.Logger.Error("Failed to marshal request body", err)
+			return c.JSON(500, err)
+		}
+
+		authRequest := c.Request().Clone(c.Request().Context())
 		authRequest.Body = io.NopCloser(bytes.NewReader(credentialBytes))
 		credential, err := webAuthn.FinishRegistration(staticUser, *sessionData, authRequest)
 		if err != nil {
@@ -123,7 +125,7 @@ func main() {
 			return c.JSON(500, err)
 		}
 
-		if err := session.Delete(); err != nil {
+		if err := session.Delete(challenge); err != nil {
 			e.Logger.Error("Failed to remove registration session", err)
 		}
 
@@ -156,19 +158,43 @@ func main() {
 
 	e.POST("/auth/login", func(c echo.Context) error {
 		e.Logger.Debug("POST /auth/login")
-		e.Logger.Debug("Loading session data")
-		sessionData, err := session.Load()
+
+		e.Logger.Debug("Parsing request body")
+		bodyBytes, err := io.ReadAll(c.Request().Body)
 		if err != nil {
+			e.Logger.Debug("Failed to read request body", err)
+			return c.JSON(400, err)
+		}
+
+		var body session.ResponseSession
+		if err := json.Unmarshal(bodyBytes, &body); err != nil {
+			e.Logger.Debug("Failed to unmarshal request body", err)
+			return c.JSON(400, err)
+		}
+
+		e.Logger.Debug("Parsing session data")
+		challenge, err := body.GetSessionChallenge()
+		if err != nil {
+			e.Logger.Error("Failed to get session challenge", err)
 			return c.JSON(500, err)
 		}
-		e.Logger.Debug("Session data loaded")
 
-		credentials, err := webAuthn.FinishLogin(staticUser, *sessionData, c.Request())
+		e.Logger.Debug("Loading session data")
+		sessionData, err := session.Load(challenge)
+		if err != nil {
+			e.Logger.Error("Failed to load session data", err)
+			return c.JSON(500, err)
+		}
+
+		e.Logger.Debug("Session data loaded")
+		authRequest := c.Request().Clone(c.Request().Context())
+		authRequest.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+		credentials, err := webAuthn.FinishLogin(staticUser, *sessionData, authRequest)
 		if err != nil {
 			e.Logger.Error("Login Failed", err)
 			return c.JSON(500, err)
 		}
-		if err := session.Delete(); err != nil {
+		if err := session.Delete(challenge); err != nil {
 			e.Logger.Error("Failed to remove login session", err)
 		}
 
