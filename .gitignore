@@ -32,3 +32,4 @@ password.txt
 .env
 
 secret/
+node_modules
