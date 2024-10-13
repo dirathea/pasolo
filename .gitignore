@@ -33,3 +33,5 @@ password.txt
 
 secret/
 node_modules
+
+dist/
