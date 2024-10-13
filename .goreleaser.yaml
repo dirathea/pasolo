@@ -56,3 +56,9 @@ changelog:
     exclude:
       - "^docs:"
       - "^test:"
+
+release:
+  mode: keep-existing
+  github:
+    name: pasolo
+    owner: dirathea

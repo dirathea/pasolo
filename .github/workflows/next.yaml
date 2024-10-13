@@ -1,11 +1,10 @@
 # .github/workflows/release.yml
-name: Release
+name: Upstream Build
 
 on:
   push:
-    # run only against tags
-    tags:
-      - "*"
+    branches:
+      - main
 
 permissions:
   contents: write
@@ -14,7 +13,7 @@ permissions:
   # issues: write
 
 jobs:
-  release:
+  goreleaser:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -46,7 +45,7 @@ jobs:
           distribution: goreleaser
           # 'latest', 'nightly', or a semver
           version: "~> v2"
-          args: release --clean
+          args: release --clean --draft
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Your GoReleaser Pro key, if you are using the 'goreleaser-pro' distribution
