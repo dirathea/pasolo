@@ -16,7 +16,7 @@ before:
     - go mod tidy
     # you may remove this if you don't need go generate
     - go generate ./...
-    - npm ci --include=dev --workspace=frontend
+    - npm i --workspace=frontend
     - npm run build --workspace=frontend
 
 builds:
