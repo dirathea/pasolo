@@ -80,6 +80,7 @@ changelog:
 
 release:
   mode: keep-existing
+  target_commitish: "{{ .Commit }}"
   github:
     name: pasolo
     owner: dirathea
