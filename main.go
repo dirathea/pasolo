@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"embed"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,17 +12,19 @@ import (
 
 	"github.com/dirathea/pasolo/pkg/config"
 	"github.com/dirathea/pasolo/pkg/cookie"
+	"github.com/dirathea/pasolo/pkg/frontend"
 	"github.com/dirathea/pasolo/pkg/register"
 	"github.com/dirathea/pasolo/pkg/session"
 	"github.com/dirathea/pasolo/pkg/user"
 	"github.com/go-webauthn/webauthn/webauthn"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 )
 
 var (
 	webAuthn *webauthn.WebAuthn
 	err      error
+	//go:embed all:frontend/build/client
+	frontendFs embed.FS
 )
 
 func main() {
@@ -211,10 +214,7 @@ func main() {
 		return c.JSON(200, "OK")
 	})
 
-	e.Use(middleware.StaticWithConfig(middleware.StaticConfig{
-		Root:  "frontend/build/client",
-		HTML5: true,
-	}))
+	frontend.Setup(e, frontendFs)
 
 	address := fmt.Sprintf(":%s", config.Server.Port)
 
