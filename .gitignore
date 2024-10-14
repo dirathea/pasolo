@@ -35,3 +35,4 @@ secret/
 node_modules
 
 dist/
+frontend/build/

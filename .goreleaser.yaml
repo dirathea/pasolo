@@ -16,6 +16,8 @@ before:
     - go mod tidy
     # you may remove this if you don't need go generate
     - go generate ./...
+    - npm ci --workspace=frontend
+    - npm run build --workspace=frontend
 
 builds:
   - env:
@@ -42,13 +44,32 @@ archives:
 
 dockers:
   - use: buildx
+    dockerfile: goreleaser.Dockerfile
     image_templates:
-      - "ghcr.io/dirathea/{{ .ProjectName }}:{{ .Tag }}"
-      - "ghcr.io/dirathea/{{ .ProjectName }}:v{{ .Major }}"
-      - "ghcr.io/dirathea/{{ .ProjectName }}:v{{ .Major }}.{{ .Minor }}"
-      - "ghcr.io/dirathea/{{ .ProjectName }}:latest"
+      - "ghcr.io/dirathea/{{ .ProjectName }}:{{ .Tag }}-arm64"
+      - "ghcr.io/dirathea/{{ .ProjectName }}:v{{ .Major }}-arm64"
+      - "ghcr.io/dirathea/{{ .ProjectName }}:v{{ .Major }}.{{ .Minor }}-arm64"
+    goarch: arm64
     build_flag_templates:
-      - "--platform=linux/amd64,linux/arm64"
+      - "--platform=linux/arm64"
+  - use: buildx
+    dockerfile: goreleaser.Dockerfile
+    image_templates:
+      - "ghcr.io/dirathea/{{ .ProjectName }}:{{ .Tag }}-amd64"
+      - "ghcr.io/dirathea/{{ .ProjectName }}:v{{ .Major }}-amd64"
+      - "ghcr.io/dirathea/{{ .ProjectName }}:v{{ .Major }}.{{ .Minor }}-amd64"
+    build_flag_templates:
+      - "--platform=linux/amd64"
+
+docker_manifests:
+  - name_template: "ghcr.io/dirathea/{{ .ProjectName }}:{{ .Tag }}"
+    image_templates:
+      - "ghcr.io/dirathea/{{ .ProjectName }}:{{ .Tag }}-amd64"
+      - "ghcr.io/dirathea/{{ .ProjectName }}:{{ .Tag }}-arm64"
+  - name_template: "ghcr.io/dirathea/{{ .ProjectName }}:latest"
+    image_templates:
+      - "ghcr.io/dirathea/{{ .ProjectName }}:{{ .Tag }}-amd64"
+      - "ghcr.io/dirathea/{{ .ProjectName }}:{{ .Tag }}-arm64"
 
 changelog:
   sort: asc
