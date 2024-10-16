@@ -2,6 +2,8 @@
 
 To run pasolo with Traefik, here are the configuration sample. Dont forget to adjust to match your deployment
 
+![Traefik Auth Forward Illustration](https://doc.traefik.io/traefik/assets/img/middleware/authforward.png)
+
 ```yaml
 http:
   routers:

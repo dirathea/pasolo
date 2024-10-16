@@ -8,10 +8,10 @@ const config: Config = {
   favicon: 'img/favicon.ico',
 
   // Set the production url of your site here
-  url: 'https://your-docusaurus-site.example.com',
+  url: 'https://dirathea.github.io/',
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
-  baseUrl: '/',
+  baseUrl: '/pasolo/',
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
@@ -33,32 +33,21 @@ const config: Config = {
     mermaid: true,
   },
 
-  themes: ['@docusaurus/theme-classic', '@docusaurus/theme-mermaid'],
-  plugins: [
+  presets: [
     [
-      '@docusaurus/plugin-content-docs',
+      'classic',
       {
-        routeBasePath: '/', // Serve the docs at the site's root
-        sidebarPath: './sidebars.ts',
-      },
-    ],
+        docs: {
+          routeBasePath: '/', // Serve the docs at the site's root
+          sidebarPath: './sidebars.ts',
+        },
+        blog: false,
+        theme: {
+          customCss: './src/css/custom.css',
+        },
+      } satisfies Preset.Options,
+    ]
   ],
-
-  // presets: [
-  //   [
-  //     'classic',
-  //     {
-  //       docs: {
-  //         routeBasePath: '/', // Serve the docs at the site's root
-  //         sidebarPath: './sidebars.ts',
-  //       },
-  //       blog: false,
-  //       theme: {
-  //         customCss: './src/css/custom.css',
-  //       },
-  //     } satisfies Preset.Options,
-  //   ]
-  // ],
 
   themeConfig: {
     // Replace with your project's social card
@@ -70,13 +59,13 @@ const config: Config = {
         src: 'img/logo.svg',
       },
       items: [
-        {
-          type: 'docSidebar',
-          sidebarId: 'tutorialSidebar',
-          position: 'left',
-          label: 'Docs',
-        },
-        {to: '/blog', label: 'Blog', position: 'left'},
+        // {
+        //   type: 'docSidebar',
+        //   sidebarId: 'tutorialSidebar',
+        //   position: 'left',
+        //   label: 'Docs',
+        // },
+        // {to: '/blog', label: 'Blog', position: 'left'},
         {
           href: 'https://github.com/dirathea/pasolo',
           label: 'GitHub',

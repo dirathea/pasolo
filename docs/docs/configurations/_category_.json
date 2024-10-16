@@ -1,6 +1,6 @@
 {
   "label": "Configurations",
-  "position": 3,
+  "position": 4,
   "link": {
     "type": "generated-index",
     "description": "Configurations example of how to run Pasolo with various reverse proxies."
