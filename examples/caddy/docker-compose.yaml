@@ -3,7 +3,7 @@ services:
     build:
       context: ../../.
       dockerfile: Dockerfile
-    image: pasolo:latest
+    image: ghcr.io/dirathea/pasolo:v0.2.0
     env_file:
       - .env
     environment:
@@ -13,17 +13,20 @@ services:
     volumes:
       - secret:/secret
 
-  proxy:
+  app:
+    depends_on:
+      - auth
+      - target
     image: caddy:2
     ports:
-      - 80
+      - 443
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
 
   target:
-    image: zefhemel/silverbullet
+    image: jmalloc/echo-server
     expose:
-      - 3000
+      - 8080
 
 volumes:
   secret:

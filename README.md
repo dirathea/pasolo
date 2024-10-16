@@ -1,6 +1,15 @@
-# Introduction
+# Pasolo - Single User Authenticatios Server using Passkeys
 
 Pasolo is an authentication server for single users with passkeys. Pasolo runs alongside with other reverse proxy system such as Caddy, Traefik,  Nginx, using `forward_auth` or `external_auth` functionality.
+
+<div>
+    <a href="https://www.loom.com/share/4da6df49c2af4eb6a1007b87c7e4ed9b">
+      <p>Pasolo Demo - Watch Video</p>
+    </a>
+    <a href="https://www.loom.com/share/4da6df49c2af4eb6a1007b87c7e4ed9b">
+      <img style="max-width:300px;" src="https://cdn.loom.com/sessions/thumbnails/4da6df49c2af4eb6a1007b87c7e4ed9b-ae91bcddd7180d64-full-play.gif">
+    </a>
+  </div>
 
 ## Why?
 
