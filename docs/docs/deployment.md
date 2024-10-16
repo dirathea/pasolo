@@ -3,15 +3,7 @@ sidebar_position: 2
 ---
 # Deployment
 
-Pasolo is available as a Container Image and utilize environment variable as the main configuration.
-
-```mermaid
-graph LR;
-    A-->B;
-    A-->C;
-    B-->D;
-    C-->D;
-```
+Pasolo is available at [GitHub Release](https://github.com/dirathea/pasolo/releases) as a single binary, or as Container Image. To customize deployment, use environment variable.
 
 # Required Environment Variable
 
@@ -38,10 +30,7 @@ Pasolo also required persistent volume to store login session, as well as regist
 # example docker-compose.yml
 services:
   auth:
-    build:
-      context: ../../.
-      dockerfile: Dockerfile
-    image: pasolo:latest
+    image: ghcr.io/dirathea/pasolo:latest
     env_file:
       - .env
     environment:
