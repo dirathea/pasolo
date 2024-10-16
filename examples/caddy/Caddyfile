@@ -1,5 +1,9 @@
+{
+	auto_https ignore_loaded_certs
+}
+
 # Serve your app
-proxy.caddy.orb.local {
+app.caddy.orb.local {
 	forward_auth / auth.caddy.orb.local {
 		uri /validate
 		copy_headers Remote-User Remote-Groups Remote-Name Remote-Email
@@ -10,5 +14,5 @@ proxy.caddy.orb.local {
 		}
 	}
 
-	reverse_proxy target:3000
+	reverse_proxy target:8080
 }
