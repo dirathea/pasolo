@@ -55,7 +55,7 @@ jobs:
           go-version: stable
       # More assembly might be required: Docker logins, GPG, etc.
       # It all depends on your needs.
-      - uses: obfu5c8/action-svu
+      - uses: obfu5c8/action-svu@v1
         id: svu
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
