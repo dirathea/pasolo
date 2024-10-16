@@ -1,7 +1,8 @@
-import { useEffect } from "react";
 import { startRegistration } from "@simplewebauthn/browser";
+import { useNavigate } from "@remix-run/react";
 
 export default function Register() {
+  const navigate = useNavigate();
 
   async function register(password: string) {
 
@@ -13,9 +14,7 @@ export default function Register() {
     });
     try {
       const response = await register.json();
-      console.log(response);
       const registerResponse = await startRegistration(response);
-      console.log(registerResponse);
 
       // POST the response to the endpoint that calls
       // @simplewebauthn/server -> verifyRegistrationResponse()
@@ -33,7 +32,7 @@ export default function Register() {
       if (!verificationResp.ok) {
         throw new Error("Failed to verify registration");
       } else {
-        window.location.href = '/login?rd=' + redirectUrl;
+        navigate('/login?rd=' + redirectUrl);
       }
       
     } catch (error) {

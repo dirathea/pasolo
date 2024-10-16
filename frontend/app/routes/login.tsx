@@ -1,7 +1,9 @@
-import { useEffect } from "react";
 import { startAuthentication } from "@simplewebauthn/browser";
+import { useNavigate } from "@remix-run/react";
 
 export default function Login() {
+  const navigate = useNavigate();
+
   async function login() {
     const urlParams = new URLSearchParams(window.location.search);
     const redirectUrl = urlParams.get("rd") || "/";
@@ -11,9 +13,7 @@ export default function Login() {
     });
     try {
       const response = await register.json();
-      console.log(response);
       const registerResponse = await startAuthentication(response);
-      console.log(registerResponse);
 
       // POST the response to the endpoint that calls
       // @simplewebauthn/server -> verifyRegistrationResponse()
@@ -28,11 +28,11 @@ export default function Login() {
       if (!verificationResp.ok) {
         throw new Error("Failed to verify login");
       } else {
-        window.location.href = redirectUrl;
+        window.location.replace(redirectUrl);
       }
     } catch (error) {
       console.error(error);
-      window.location.href = "/register?rd=" + redirectUrl;
+      navigate("/register?rd=" + redirectUrl);
     }
   }
 
