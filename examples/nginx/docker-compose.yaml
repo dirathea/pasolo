@@ -1,0 +1,32 @@
+services:
+  auth:
+    build:
+      context: ../../.
+      dockerfile: Dockerfile
+    image: ghcr.io/dirathea/pasolo:v0.2.0
+    env_file:
+      - .env
+    environment:
+      STORE_DATADIR: /secret
+    ports:
+      - 8080
+    volumes:
+      - secret:/secret
+
+  app:
+    depends_on:
+      - auth
+      - target
+    image: nginx:stable
+    ports:
+      - 80
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+
+  target:
+    image: jmalloc/echo-server
+    expose:
+      - 8080
+
+volumes:
+  secret:
