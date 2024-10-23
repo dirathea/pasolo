@@ -51,12 +51,12 @@ const config: Config = {
 
   themeConfig: {
     // Replace with your project's social card
-    image: 'img/docusaurus-social-card.jpg',
+    image: 'img/pasolo.jpg',
     navbar: {
       title: 'Pasolo',
       logo: {
         alt: 'Solo Authentication Server using Passkeys',
-        src: 'img/logo.svg',
+        src: 'img/pasolo.jpg',
       },
       items: [
         // {
